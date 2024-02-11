@@ -1,0 +1,379 @@
+---
+title: "Project_1: Which Factor Affects Satisfaction Level The Most?"
+author: "Vi Le"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+## Project and Data Introduction
+
+**Importing data and necessary libraries**.  
+
+Data set downloaded from Kaggle: https://www.kaggle.com/datasets/redpen12/employees-satisfaction-analysis  
+The data used in this project contains employee ID, satisfaction level, last performance evaluation, numbers of project total, average monthly hour, year with company, promotion within last 5 years, work accident, department(10 departments total), and salary type (low, medium, high).  
+
+A few libraries needed for this project are:  
+
+- Cleaning and analyzing data: dplyr, reshape, reshape2, tidyverse, modelr.  
+
+- Visualizing data: ggplot2, RColorBrewer, ggpubr.  
+
+**Goal and process of project: **  
+
+- Goal: to determine which factor affects the satisfaction level the most, and the reason why.   
+
+- Process: 
+
+-- Step 1: Compare satisfaction level with last performance evaluation. 
+
+-- Step 2: Detect outliers (if any). 
+
+-- Step 3: Show current satisfaction level associates with each factor (department, salary type, work accident, promotion, average monthly hour, time spend with company, number of project) to see which factor has more uneven pattern. 
+
+-- Step 4: When factor(s) is/are determined from above, show any possible relationship between factors.  
+
+-- Step 5: Perform deeper analysis from here, based on results in step 4.  
+
+```{r, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(reshape)
+library(RColorBrewer)
+library(tidyverse)
+library(modelr)
+library(ggpubr)
+df = read.csv("Employee_Attrition.csv", sep=",", header=TRUE)
+```
+
+\pagebreak
+
+## Summary of data
+
+```{r, echo=FALSE}
+summary(df)
+sum(is.na(df))
+(sum(is.na(df))/nrow(df))*100
+```
+
+\pagebreak
+
+## Step 1: Compare satisfaction level and last evaluation.  
+
+```{r, message=FALSE}
+current_level = df %>%
+  select(satisfaction_level, last_evaluation)
+
+attach(current_level)
+par(mfrow=c(2,1))
+boxplot(current_level$satisfaction_level, horizontal = T, 
+        main = "Satisfaction Level", col = 'darkolivegreen', 
+        border='gray20', ylim=c(0,1))
+axis(side = 1, at=seq(0,1,by=0.1))
+
+boxplot(current_level$last_evaluation, horizontal = T, 
+        main = "Performance Evaluation", col = 'darkolivegreen', 
+        border='gray20', ylim=c(0,1))
+axis(side = 1, at=seq(0,1,by=0.1))
+```
+
+## Step 2: Detect outliers (if any)
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+boxplot.stats(df$last_evaluation)$out
+boxplot.stats(df$satisfaction_level)$out
+boxpl = tibble(Measures=c("Min","Q1 (25%)","Q3 (75%)","Sd","IQR"),
+               Current=c(min(df$satisfaction_level, na.rm=T), 
+                  quantile(df$satisfaction_level, 0.25, na.rm=T),
+                  quantile(df$satisfaction_level, 0.75, na.rm=T),
+                  sd(df$satisfaction_level, na.rm=T),
+                  IQR(df$satisfaction_level, na.rm=T)),
+               Last=c(min(df$last_evaluation, na.rm=T),
+                      quantile(df$last_evaluation, 0.25, na.rm=T),
+                      quantile(df$last_evaluation, 0.75, na.rm=T),
+                      sd(df$last_evaluation, na.rm=T),
+                      IQR(df$last_evaluation, na.rm=T)))
+boxpl
+```
+As in 2 box plots and the table shown above, a few things can be concludes:  
+
+- There is no outliers in satisfaction level or last performance evaluation.  
+
+- The last evaluation result had a better performance than the satisfaction level (higher Min, Q1, Q3). 
+
+-> Possible interpretation: Some employees have good performance but are not satisfied with job.  
+
+**Next step, let's take a look of what could possibly be the reason the current satisfaction level is not match with last evaluation.**  
+
+## Step 3: Show current satisfaction level and last evaluation associate with each factor.  
+
+```{r, message=FALSE, warning=FALSE, echo=FALSE}
+p1 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = satisfaction_level, y = Work_accident, group = Work_accident), 
+               color = "gray20", fill="peru") +
+  labs(x = "Satisfaction Levels", y = "Work Accidents",
+       title = "Satisfaction Level Associate with Work Accident") +
+  scale_x_continuous(breaks = seq(0,1,0.15)) +
+  scale_y_continuous(breaks = seq(0,1,1))
+
+p2 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = satisfaction_level, y = promotion_last_5years, 
+                             group = promotion_last_5years), 
+                             color = "gray20", fill="darkolivegreen4") +
+  labs(x = "Satisfaction Level", y = "Promotion",
+       title = "Satisfaction Level Associate with Promotion") +
+  scale_x_continuous(breaks = seq(0,1,0.15)) +
+  scale_y_continuous(breaks = seq(0,1,1))
+
+p3 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = satisfaction_level, y = number_project, group = number_project), 
+                             color = "gray20", fill = "olivedrab") +
+  labs(x = "Satisfaction Level", y = "Number of Projecs",
+       title = "Satisfaction Level Associate with Number of Projects") +
+  scale_x_continuous(breaks = seq(0,1,0.1))
+
+p4 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = time_spend_company, y = satisfaction_level, 
+                             group = time_spend_company), 
+                             color = "gray20", fill = "tan3") +
+  labs(x = "Years with Company", y = "Satisfaction Level",
+       title = "Satisfaction Level Associate with Years at Company") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  scale_y_continuous(breaks = seq(0,1,0.25))
+
+p5 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = dept, y = satisfaction_level), 
+                             color = "gray20", fill = "chartreuse4") +
+  labs(x = "Departments", y = "Satisfaction Level",
+       title = "Satisfaction Level Associate with Departments") 
+
+p6 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = salary, y = satisfaction_level,
+                             group = salary), 
+                             color = "gray20", fill = "palegreen4") +
+  labs(x = "Salary", y = "Satisfaction Level",
+       title = "Satisfaction Level Associate with Salary Category") 
+
+p7 = ggplot(data = df, na.rm=T) +
+  geom_point(mapping = aes(x = average_montly_hours, y = (satisfaction_level)),
+             color = "darkseagreen", shape = 16, size=1) +
+  geom_smooth(mapping = aes(x = average_montly_hours, y = satisfaction_level), 
+              color = "firebrick4") +
+  scale_x_continuous(breaks = seq(90,310,20))
+  labs(title = "Satisfaction Level Associate with Monthly Hours", 
+       x="Average Hours", y="Satisfaction Level")
+
+```
+
+\pagebreak
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+p11 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = last_evaluation, y = Work_accident,
+                             group = Work_accident), 
+               color = "gray20", fill="peru") +
+  labs(x = "Evaluation", y = "Work Accidents",
+       title = "Evaluation Associate with Work Accident") +
+  scale_x_continuous(breaks = seq(0,1,0.15)) +
+  scale_y_continuous(breaks = seq(0,1,1))
+
+p22 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = last_evaluation, y = promotion_last_5years, 
+                             group = promotion_last_5years), 
+                             color = "gray20", fill="darkolivegreen4") +
+  labs(x = "Evaluation", y = "Promotion",
+       title = "Evaluation Associate with Promotion") +
+  scale_x_continuous(breaks = seq(0,1,0.15)) +
+  scale_y_continuous(breaks = seq(0,1,1))
+
+p33 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = last_evaluation, y = number_project, 
+                             group = number_project), 
+                             color = "gray20", fill = "olivedrab") +
+  labs(x = "Evaluation", y = "Number of Projecs",
+       title = "Evaluation Associate with Number of Projects") +
+  scale_x_continuous(breaks = seq(0,1,0.1))
+
+p44 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = time_spend_company, y = last_evaluation, 
+                             group = time_spend_company), 
+                             color = "gray20", fill = "tan3") +
+  labs(x = "Years with Company", y = "Evaluation",
+       title = "Evaluation Associate with Years at Company") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  scale_y_continuous(breaks = seq(0,1,0.25))
+
+p55 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = dept, y = last_evaluation), 
+                             color = "gray20", fill = "chartreuse4") +
+  labs(x = "Departments", y = "Evaluation",
+       title = "Evaluation Associate with Departments") 
+
+p66 = ggplot(data = df, na.rm=T) +
+  geom_boxplot(mapping = aes(x = salary, y = last_evaluation,
+                             group = salary), 
+                             color = "gray20", fill = "palegreen4") +
+  labs(x = "Salary", y = "Evaluation",
+       title = "Evaluation Associate with Salary Category") 
+
+p77 = ggplot(data = df, na.rm=T) +
+  geom_point(mapping = aes(x = average_montly_hours, y = (last_evaluation)),
+             color = "darkseagreen", shape = 16, size=1) +
+  geom_smooth(mapping = aes(x = average_montly_hours, y = last_evaluation), 
+              color = "firebrick4") +
+  scale_x_continuous(breaks = seq(90,310,20))
+  labs(title = "Evaluation Associate with Monthly Hours", 
+       x="Average Hours", y="Evaluation")
+```
+
+
+```{r, warning=FALSE, message=FALSE}
+ggarrange(p1,p11,ncol=2)
+ggarrange(p2,p22,ncol=2)
+ggarrange(p3,p33,ncol=2)
+ggarrange(p4,p44,ncol=2)
+ggarrange(p5,p55,ncol=2)
+ggarrange(p6,p66,ncol=2)
+ggarrange(p7,p77,ncol=2)
+```
+
+
+
+**Observation:** 
+
+-- Satisfaction level and last evaluation in the plots of Number of Projects, Years with Company, and Average Monthly Hours has big difference between each groups than compared to other plots. 
+
+- In **Number of Project plot, Years with Company plot, and Average Monthly Hours plot**, groups with lowest satisfaction level have significantly higher performance evaluation, in some cases even, have highest evaluation. **WHY?** 
+
+- To understand deeper why there is such a contrary between lowest and highest groups of each plot associate with satisfaction level and performance evaluation, let's take a deeper look into mentioned categories.  
+
+\pagebreak
+
+## Step 4: Analysis on Number of Projects, Years with Company, and Average Monthly Hours  
+
+**Compute counts of employees associates with number of projects and years with company**.  
+
+Below is the plot tile plot represents the values of counts of employees associates with number of projects and years with company. The darker the tile, the higher the counts of employees.  
+
+
+```{r, warning=FALSE, message=FALSE}
+green <- brewer.pal(9, "Greens")
+green_range <- colorRampPalette(green)
+
+ypr = df%>%
+  select(time_spend_company, number_project) %>%
+  group_by(number_project) %>%
+  count(number_project, time_spend_company)
+
+yprplot = ggplot(data = ypr) +
+  geom_tile(mapping = aes(x=number_project, y=time_spend_company, fill=factor(n)),
+            show.legend = FALSE, color=NA)+
+  scale_fill_manual(values = green_range(40)) +
+  labs(title = "Counts of Employees Associates With Years at Company and Number of Projects",
+       x="Projects", y="Years") +
+  scale_x_continuous(breaks=seq(0,10,1)) +
+  scale_y_continuous(breaks=seq(2,12,1))
+```
+
+\pagebreak
+
+```{r, warning=FALSE, message=FALSE}
+yprplot
+```
+
+```{r, message=FALSE, echo=FALSE, warning=FALSE}
+ypr_stat = df %>%
+  select(time_spend_company, number_project) %>%
+  group_by(time_spend_company) %>%
+  count(number_project) %>%
+  cast(time_spend_company ~ number_project)
+
+ypr_stat 
+
+ggarrange(p3,p33,ncol=2)
+ggarrange(p4,p44,ncol=2)
+
+p8 = ggplot(data = df) +
+  geom_bar(mapping = aes(x=time_spend_company), fill = "olivedrab") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  labs(x = "Years", y = "Counts")
+
+p9 = ggplot(data = df) +
+  geom_bar(mapping = aes(x=number_project), fill = "orange3") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  labs(x = "Project",y = "Counts")
+
+ggarrange(p9,p8, ncol=2)
+```
+
+Based on the plots:  
+
+- Back on the "Count of Employees Associates with Years at Company and Number of Project" plot, even though 4-year group does NOT have the highest count of employees associates with number of projects, but it DOES have the highest employee counts in 6 and 7 projects specifically (6 projects is 673, and 7 projects is 210), compared to the other year group associates with 6 or 7 projects.  
+
+- People did 6 and 7 projects have the lowest satisfaction level, but very high performance evaluation.  
+
+- People spend 4 years with company have the lowest performance in satisfaction level, but have the second best performance in the last evaluation.  
+
+-> Things are getting clearer now. Let's take a closer look into these data.  
+
+\pagebreak
+
+## Step 5: A deeper look
+
+```{r, warning=FALSE, message=FALSE}
+sixseven = df %>%
+  select(number_project) %>%
+  filter(number_project == 6 | number_project == 7) %>%
+  count(number_project)
+
+sixseven
+
+(ypr_stat[3, 6]/sixseven[1,2])*100
+(ypr_stat[3, 7]/sixseven[2,2])*100
+```
+
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+m3 = df%>%
+  select(average_montly_hours, number_project) %>%
+  group_by(number_project) %>%
+  count(number_project, average_montly_hours)
+
+m3
+
+
+p10 = ggplot(data = df, na.rm=T) +
+  geom_jitter(mapping = aes(x=number_project, y=average_montly_hours), size=0.02,
+              color="darkolivegreen") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  scale_y_continuous(breaks = seq(50,310,20))
+  labs(title = "Number of Projects Group by Monthly Hours", 
+       x="Projects", y="Hours")
+
+p11 = ggplot(data = df, na.rm=T) +
+  geom_jitter(mapping = aes(x=time_spend_company, y=average_montly_hours), size=0.02,
+              color="sienna") +
+  scale_x_continuous(breaks = seq(0,10,1)) +
+  scale_y_continuous(breaks = seq(50,310,20))
+  labs(title = "Years at Company Group by Monthly Hours", 
+       x="Years", y="Hours")
+  
+p10
+p11
+```
+
+- Project 6 and 7 have the two lowest employee count (not many employees did 6 or 7 projects).  
+
+- However, employees in 4-year group take about 57% in 6-project group and about 82% in 7-project group. This means those differences mentioned above are heavily affected by employees did 6 or 7 projects.  
+
+- As expected, 6-project and 7-project groups have the most employees who work the most average hours a month, which are also the groups have the lowest satisfaction level. Additionally, 4-year group also have the most employees wh have the most average monthly hours. 
+
+**From all the results and interpretation above, we can assume a few things:**  
+
+**- More than half of employees in 4-year group did 6 or 7 projects, and those employees heavily affect the satisfaction level of 4-year and 6 or 7-project groups.**  
+
+**- Naturally, more projects means more working hours a month. In this case, highest hours a month falls into 6 or 7-project groups, and a lot falls into 4-year group.**  
+
+***4 years at company is enough to have certain experience, but does not seem enough to handle more than average number of projects. Therefore, projects done by employees in this group might take a little longer compared to more experience group, which could possibly lead to more problem and stress. ***
