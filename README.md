@@ -15,12 +15,12 @@ Goal and process of project:
 
 - Process: 
 
-- Step 1: Compare satisfaction level with last performance evaluation. 
+-- Step 1: Compare satisfaction level with last performance evaluation. 
 
-- Step 2: Detect outliers (if any). 
+-- Step 2: Detect outliers (if any). 
 
-- Step 3: Show current satisfaction level associates with each factor (department, salary type, work accident, promotion, average monthly hour, time spend with company, number of project) to see which factor has more uneven pattern. 
+-- Step 3: Show current satisfaction level associates with each factor (department, salary type, work accident, promotion, average monthly hour, time spend with company, number of project) to see which factor has more uneven pattern. 
 
-- Step 4: When factor(s) is/are determined from above, show any possible relationship between factors.  
+-- Step 4: When factor(s) is/are determined from above, show any possible relationship between factors.  
 
-- Step 5: Perform deeper analysis from here, based on results in step 4.  
+-- Step 5: Perform deeper analysis from here, based on results in step 4.  
